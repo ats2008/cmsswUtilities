@@ -11,6 +11,9 @@ from itertools import groupby
 from textwrap import dedent
 import pandas as pd
 
+
+FULL_DETAILS =False
+#FULL_DETAILS =True
 HSO6_CONVERSION_FACTOR = 21.0
 tot_kevt = 0
 tot_cpu_ksec = 0
@@ -25,10 +28,49 @@ with open('mcmResponse.json', 'r') as fp:
 
 exception_prepids =["SUS-RunIISummer20UL18wmLHEGEN-00044","EXO-RunIISummer20UL18wmLHEGEN-00130","SUS-RunIISummer20UL18GEN-00013","SUS-RunIISummer20UL18wmLHEGEN-00018","EXO-RunIISummer20UL18GEN-00075"]
 
-compiledTags = {'ttv_all':'MLM/FxFx/amc@nlo','ttv_lo':'MLM','ttv_nlo':"FxFx/amc@nlo"}
+compiledTags = {
+#'amcatnlo':'amcatnlo',
+#'mlm':'mlm',
+#'fxfx':'fxx',
+#'madgraph':'madgraph',
+#'openloops':'openloops',
+#'powheg':'powheg',
+#'pythia':'pythia',
+#'comphep':'COMPHEP',
+'ttv_all':'MLM/FxFx/amc@nlo',
+'ttv_lo':'MLM',
+'ttv_nlo':"FxFx/amc@nlo",
+'ttv_fxfx':'FxFx',
+'ttv_amcatnlo':'amc@nlo',
+'st' : 'PW/amc@nlo/ch',
+'st_ch' : 'comphep',
+'st_nlo' : 'PW/amc@nlo',
+'st_pw' : 'Powheg',
+'st_amcatnlo' : 'amc@nlo',
+'vv_all' : 'PW/amc@nlo/FxFx/MG5/PY',
+'vv_lo': 'MG5/PY',
+'vv_madgraph':'MG5_aMC',
+'vv_pythia':'pythia8',
+'vv_nlo' : 'PW/amc@nlo/FxFx',
+'vv_pw' : 'Powheg',
+'vv_amcatnlo':'amc@nlo',
+'vv_fxfx' : 'FxFx',
+'qcd_all' : 'PW/amc@nlo/FxFx/MG5/PY',
+'qcd_lo': 'MG5/PY',
+'qcd_madgraph':'MG5_aMC',
+'qcd_pythia':'pythia8',
+'qcd_nlo' : 'PW/amc@nlo/FxFx/Herwig',
+'qcd_herwig' : 'Herwig',
+'qcd_pw' : 'Powheg',
+'qcd_amcatnlo':'amc@nlo',
+'qcd_fxfx' : 'FxFx',
+}
+
+
+
 compiledStats ={}
 for tag in compiledTags:
-	compiledStats[tag]= {'prepids':[],'datasets':[],'totalEvents' : 0, 'totalCpuSec' :0 , 'cpuSecPerEvent' : 1e19,'hs06':1e19};
+	compiledStats[tag]= {'prepids':[],'datasets':[],'totalEvents' : 0, 'totalCpuSec' :0 , 'cpuSecPerEvent' : -1,'hs06':-1};
 def updateCompiledStats( stats,cStats ):
 	cStats['totalEvents']+=stats['events']
 	cStats['totalCpuSec']+=stats['cpuTime']
@@ -65,8 +107,14 @@ for line in Lines:
                 
 		dsetname= stats[pid]['dataset'].lower()
    
+                if 'herwig' in dsetname: 	stats[pid]['herwig']=True
+		else :				stats[pid]['herwig']=False		
+                
                 if 'minnlo' in dsetname: 	stats[pid]['minnlo']=True
 		else :				stats[pid]['minnlo']=False		
+                
+		if 'comphep' in dsetname: 	stats[pid]['comphep']=True
+		else :				stats[pid]['comphep']=False		
                 
                 if 'openloops' in dsetname: 	stats[pid]['openloops']=True
 		else :				stats[pid]['openloops']=False		
@@ -80,7 +128,13 @@ for line in Lines:
                 if 'amcatnlo' in dsetname: 	stats[pid]['amcatnlo']=True
 		else :				stats[pid]['amcatnlo']=False		
 
-                if 'mlm' in dsetname: 		stats[pid]['mlm']=True
+                if 'pythia8' in dsetname: 		stats[pid]['pythia']=True
+		else :				stats[pid]['pythia']=False
+  
+                if 'madgraph' in dsetname: 		stats[pid]['madgraph']=True
+		else :				stats[pid]['madgraph']=False
+  
+    		if 'mlm' in dsetname: 		stats[pid]['mlm']=True
 		else :				stats[pid]['mlm']=False
 		
                 stats[pid]['events'] 		= int(split_strings[3])*1000
@@ -91,29 +145,92 @@ for line in Lines:
                 stats[pid]['hs06']  		= HSO6_CONVERSION_FACTOR*stats[pid]['cpuTime']/stats[pid]['events']
 
 		stat=stats[pid]
+		
+		#if stat['amcatnlo'] :	updateCompiledStats(stat,compiledStats['amcatnlo'])
+		#if stat['mlm'] :	updateCompiledStats(stat,compiledStats['mlm'])
+		#if stat['powheg'] :	updateCompiledStats(stat,compiledStats['powheg'])
+		#if stat['openloops'] :	updateCompiledStats(stat,compiledStats['openloops'])
+		#if stat['fxfx'] :	updateCompiledStats(stat,compiledStats['fxfx'])
+		#if stat['madgraph'] :	updateCompiledStats(stat,compiledStats['madgraph'])
+		#if stat['pythia'] :	updateCompiledStats(stat,compiledStats['pythia'])
+		#if stat['comphep'] :	updateCompiledStats(stat,compiledStats['comphep'])
+
+
 		if dsetname.startswith('ttz') or dsetname.startswith('ttw'):
 			updateCompiledStats(stat,compiledStats['ttv_all'])
-			
 			if stat['mlm'] :
 				updateCompiledStats(stat,compiledStats['ttv_lo'])
 			if stat['fxfx'] or stat['amcatnlo'] :
 				updateCompiledStats(stat,compiledStats['ttv_nlo'])
-                if "mlm" in r['dataset_name'].lower() and (r['dataset_name'].lower().startswith("ttz") or r['dataset_name'].lower().startswith("ttw")):
-  	              tot_kevt += float(split_strings[3])
-        	      tot_cpu_ksec += float(split_strings[15])
+			if stat['fxfx'] :
+				updateCompiledStats(stat,compiledStats['ttv_fxfx'])
+			if stat['amcatnlo'] :
+				updateCompiledStats(stat,compiledStats['ttv_amcatnlo'])
+	        
+		if dsetname.startswith("st_"):
+	      		updateCompiledStats(stat,compiledStats['st'])
+			if stat['amcatnlo'] or stat['powheg']:
+				updateCompiledStats(stat,compiledStats['st_nlo'])
+			if stat['amcatnlo']:
+				updateCompiledStats(stat,compiledStats['st_amcatnlo'])
+			if stat['comphep']:
+				updateCompiledStats(stat,compiledStats['st_ch'])
+			if stat['powheg']:
+				updateCompiledStats(stat,compiledStats['st_pw'])
+	
+		if ('ww' in dsetname) or  ('wz' in dsetname) or ('wzjj_ewk' in dsetname) or  ('wwg' in dsetname) or ('wzg' in dsetname):
+			updateCompiledStats(stat,compiledStats['vv_all'])
+		
+			if stat['madgraph'] or stat['pythia'] :
+				updateCompiledStats(stat,compiledStats['vv_lo'])
+			if stat['fxfx'] or stat['amcatnlo'] or stat['powheg']:
+				updateCompiledStats(stat,compiledStats['vv_nlo'])
+			if stat['fxfx'] :
+				updateCompiledStats(stat,compiledStats['vv_fxfx'])
+			if stat['amcatnlo'] :
+				updateCompiledStats(stat,compiledStats['vv_amcatnlo'])
+			if stat['powheg'] :
+				updateCompiledStats(stat,compiledStats['vv_pw'])
+			if stat['madgraph'] :
+				updateCompiledStats(stat,compiledStats['vv_madgraph'])
+			if stat['pythia'] :
+				updateCompiledStats(stat,compiledStats['vv_pythia'])
+				
+		if dsetname.startswith("qcd_"):
+			updateCompiledStats(stat,compiledStats['qcd_all'])
+
+			if stat['madgraph'] or stat['pythia']:
+				updateCompiledStats(stat,compiledStats['qcd_lo'])
+			
+			if stat['amcatnlo'] or stat['fxfx'] or stat['powheg'] or stat['herwig']:
+				updateCompiledStats(stat,compiledStats['qcd_nlo'])
+	
+			if stat['madgraph'] :
+				updateCompiledStats(stat,compiledStats['qcd_madgraph'])
+			
+			if stat['pythia'] :
+				updateCompiledStats(stat,compiledStats['qcd_pythia'])
+			
+			if stat['amcatnlo'] :
+				updateCompiledStats(stat,compiledStats['qcd_amcatnlo'])
+			
+			if stat['powheg'] :
+				updateCompiledStats(stat,compiledStats['qcd_pw'])
+			
+			if stat['herwig'] :
+				updateCompiledStats(stat,compiledStats['qcd_herwig'])
+			
+			if stat['fxfx'] :
+				updateCompiledStats(stat,compiledStats['qcd_fxfx'])
 			
 
+
+	
 #                print " | "+split_strings[1].center(36)+" | "+split_strings[3].rjust(8)+" | "+split_strings[5].rjust(7)+" | "+split_strings[7].rjust(6)+" | "+split_strings[9].rjust(8)+" | "+split_strings[11].rjust(5)+" | "+split_strings[13].rjust(8)+" | "+split_strings[15].rjust(12)+" | "+str((21)*float(split_strings[15])/(float(split_strings[3]))).rjust(12)+"[ "+str(stats[pid]['hs06'])+"] | "+split_strings[19].ljust(95)
 
-
            
-#                print(final_string)
-print "tot evt [M] | tot_cpu_sec [B s] | cpu per event [s] | HS06 per event [s]"
 
-#print str(tot_kevt*1000./1E6)+" | "+str(tot_cpu_ksec*1000./1.E9)+" | "+str(tot_cpu_ksec/tot_kevt)+" | "+str((190./5.33)*tot_cpu_ksec/tot_kevt)
-print str(tot_kevt*1000./1E6)+" | "+str(tot_cpu_ksec*1000./1.E9)+" | "+str(tot_cpu_ksec/tot_kevt)+" | "+str((21)*tot_cpu_ksec/tot_kevt)
-
-fstring  ="|"+"TAG".center(10)+" | "
+fstring  ="|"+"TAG".center(20)+" | "
 fstring +="Total Events".rjust(12)+" | "
 fstring +="Total cpu s".rjust(12)+" | "
 fstring +="HS06".center(12)+" | "
@@ -122,8 +239,10 @@ print("".center(len(fstring),"-"))
 print(fstring)
 print("".center(len(fstring),"-"))
 
-for cTag in compiledStats:
-	fstring  ="|"+cTag.center(10)+" | "
+tags=list(compiledStats.keys())
+tags.sort()
+for cTag in tags:
+	fstring  ="|"+cTag.center(20)+" | "
 	fstring +="{0:0.2f}".format(compiledStats[cTag]['totalEvents']/1e6).rjust(12)+" | "
 	fstring +="{0:0.2f}".format(compiledStats[cTag]['totalCpuSec']/1e9).rjust(12)+" | "
 	fstring +="{0:0.2f}".format(compiledStats[cTag]['hs06']).rjust(12)+" | "
@@ -132,22 +251,24 @@ for cTag in compiledStats:
 print("".center(len(fstring),"-"))
 
 print("\n")
-print("Datasets and More".center(81))
 
-for cTag in compiledStats:
-	print("\n")
-	fstring=(" ~ ~   "+cTag+"   ~ ~").center(81)
-	print("".center(len(fstring),"-"))
-	print(fstring)
-	print("".center(len(fstring),"-"))
+if  FULL_DETAILS:
+	print("Datasets and More".center(81))
 	
-	idxs=np.argsort(compiledStats[cTag]['datasets'])
-	i=0
-	for idx in idxs:
-		i+=1
-		fstring=str(i).ljust(3)+" , "+compiledStats[cTag]['datasets'][idx].ljust(60)+" ( "
-		fstring+=compiledStats[cTag]['prepids'][idx].center(30)+" )"
+	for cTag in compiledStats:
+		print("\n")
+		fstring=(" ~ ~   "+cTag+"   ~ ~").center(81)
+		print("".center(len(fstring),"-"))
 		print(fstring)
+		print("".center(len(fstring),"-"))
+		
+		idxs=np.argsort(compiledStats[cTag]['datasets'])
+		i=0
+		for idx in idxs:
+			i+=1
+			fstring=str(i).ljust(3)+" , "+compiledStats[cTag]['datasets'][idx].ljust(60)+" ( "
+			fstring+=compiledStats[cTag]['prepids'][idx].center(30)+" )"
+			print(fstring)
 
 #while len(res) !=0:
 #    for r in res:
