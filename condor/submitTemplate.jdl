@@ -1,0 +1,12 @@
+universe = vanilla
+executable = cExecute_!@#$.sh
+getenv = TRUE
+log =execution_!@#$.log
+output =execution_!@#$.out
+error = execution_!@#$.error
+notification = never
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+RequestCpus = 4
++JobFlavour = "longlunch"
+queue
