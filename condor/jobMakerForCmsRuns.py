@@ -3,6 +3,15 @@ import os
 import sys
 version='v1'
 
+"""
+f=open("flist.cfg")
+txt=f.readlines()
+f.close()
+for l in txt:
+    process.source.fileNames.append(l[:-1])
+"""
+
+
 useStr="\
 Usage\n\
     ./jobMakerForCmsRuns.py <InputFileListFname> <destination> <NJOBS> <NEVENTS_PER_JOB> <jobPrefix>\n\
