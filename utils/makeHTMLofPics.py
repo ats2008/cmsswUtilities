@@ -40,7 +40,7 @@ if __name__ =="__main__":
     parser = argparse.ArgumentParser(description='example png to HTML maker')
     parser.add_argument('source',nargs="+",help='source folder')
     parser.add_argument('--suffix','-p',default='.png',help='filetype [extn : png,jpg,jpeg ..] ')
-    parser.add_argument('--out','-o',default="index.html",help='output fname')
+    parser.add_argument('--out','-o',default="index",help='output fname')
     parser.add_argument('--unique','-u',default="0",help='get name from the datetime')
     parser.add_argument('--width','-w',default="300",help='pic width')
     parser.add_argument('--height','-l',default="300",help='pic height')
@@ -64,7 +64,7 @@ if __name__ =="__main__":
             if os.path.isfile(f):
                 if ftype in f:
                     plotNames.append(f)
-    uname='_src'
+    uname=args.out
     uniqID=''
     now=datetime.datetime.now()
     if uniqueName:
@@ -79,7 +79,7 @@ if __name__ =="__main__":
     for pname in plotNames:
         os.system('cp '+pname+' ' + uname )               
     
-    foutname='plots'+uniqID
+    foutname=args.out
     fout=open(foutname+'.html','w')
     fout.write(html_beg)
     fout.write('<br>Aravind T S, TIFR, Mumbai<br>\n')
