@@ -1,12 +1,12 @@
 #!/usr/bin/env python3 
 import os
 
-NJOBS=2
+NJOBS=10
 NEVENTS_PER_JOB = -1
 ZERO_OFFSET=0
-FILES_PER_JOB=2
+FILES_PER_JOB=800
 
-destination='/grid_mnt/t3storage3/athachay/l1egamma/triggerPerformance/CMSSW_11_2_2_patch1/src/hadd/mergedFiles/'
+destination='/grid_mnt/t3storage3/athachay/l1egamma/triggerPerformance/CMSSW_10_6_25/src/EGTagAndProbe/EGTagAndProbe/test/fitter/haddTmp'
 
 FileSource ="haddFileList.txt"
 
@@ -30,7 +30,10 @@ output = $Fp(filename)cdr.stdout\n\
 error = $Fp(filename)cdr.stderr\n\
 log = $Fp(filename)cdr.log\n\
 "
-condorScript=open('jobSubmit.sub','w')
+condorScriptFail=open('haddJobFail.sub','w')
+condorScriptFail.write(condorScriptString)
+
+condorScript=open('haddJob.sub','w')
 condorScript.write(condorScriptString)
 
 runScriptTxt="\
@@ -46,12 +49,15 @@ export X509_USER_PROXY="+proxy_path+"\n\
 cd "+pwd+"/@@DIRNAME \n\
 eval `scramv1 runtime -sh`\n\
 cd $condorTmpDir \n\
+mv @@RUNSCRIPTNAME @@RUNSCRIPTNAME.busy\n\
+mv @@RUNSCRIPTNAME.fail @@RUNSCRIPTNAME.busy\n\
 hadd mergedFile@@IDX.root @@HADDFiles \n\
 if [ $? -eq 0 ]; then \n\
     echo OK\n\
-    mv mergedFile@@IDX.root "+destination+'Charmonium_Run2018A12Nov2019_UL2018_rsbv1_hadd@@IDX.root'+"\n\
-    mv @@RUNSCRIPTNAME @@RUNSCRIPTNAME.sucess\n\
+    mv mergedFile@@IDX.root "+destination+'MergedFile@@IDX.root'+"\n\
+    mv @@RUNSCRIPTNAME.busy @@RUNSCRIPTNAME.sucess\n\
 else\n\
+    mv @@RUNSCRIPTNAME.busy @@RUNSCRIPTNAME.fail\n\
     echo FAIL\n\
 fi\n\
 "
@@ -96,8 +102,10 @@ for ii in range(NJOBS):
     runScript.close()
     os.system('chmod +x '+runScriptName)
     condorScript.write("queue filename matching ("+runScriptName+")\n")
+    condorScriptFail.write("queue filename matching ("+runScriptName+".fail)\n")
 
 print(" Number of files left      : ", len(sourceFileList) )
 print(" Total Number of Jobs Made : ", madeJobs )
-
 condorScript.close()
+condorScriptFail.close()
+
